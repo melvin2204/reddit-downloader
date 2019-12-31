@@ -1,9 +1,6 @@
-"""
-From https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
-"""
-import sys
+# From https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
 
-def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=100):
+def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=90):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -19,8 +16,7 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
     filled_length = int(round(bar_length * iteration / float(total)))
     bar = '█' * filled_length + '-' * (bar_length - filled_length)
 
-    sys.stdout.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+    print("'\r{a} |{b}| {c}{d} {e}".format(a=prefix,b=bar,c=percents,d="%",e=suffix), end="\r", flush=True)
 
     if iteration == total:
-        sys.stdout.write("\n")
-    sys.stdout.flush()
+        print("")
