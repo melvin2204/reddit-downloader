@@ -10,8 +10,19 @@ import json
 import xml.etree.ElementTree as ET
 import tempfile
 import os
+import sys
 import progress
 import subprocess
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 class RedditDownloader:
     # Headers for the communication with the Reddit servers
@@ -21,11 +32,12 @@ class RedditDownloader:
     TIMEOUT = 10
 
     OUTPUT_COMMENT = "Downloaded with Reddit Downloader V2"
-    FFMPEG_COMMAND = "ffmpeg -i {video_url} -i {audio_url} -c:v copy -c:a aac -strict experimental -metadata comment=\"{comment}\" -y -hide_banner -loglevel panic {outfile}.mp4"
+    EXECUTABLE = resource_path("ffmpeg")
+    FFMPEG_COMMAND = "{executable} -i {video_url} -i {audio_url} -c:v copy -c:a aac -strict experimental -metadata comment=\"{comment}\" -y -hide_banner -loglevel panic {outfile}.mp4"
 
     def __init__(self, url, outfile=None):
         self.url = url
-        self.outfile = outfile
+        self.outfile = self.make_safe_filename(outfile)
         self.post_id = None
         self.error = False
         self.post_metadata = None
@@ -38,6 +50,9 @@ class RedditDownloader:
         self.video_resolution = (None, None)
         self.video_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
         self.audio_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
+
+        if self.outfile.rstrip() == "":
+            self.outfile = None
 
     # This function extracts the post id from the Reddit comments link.
     def extract_id(self, url):
@@ -159,20 +174,20 @@ class RedditDownloader:
 
         return highest_resolution
 
+    # Function to make a string safe for a filename
+    def make_safe_filename(self, s):
+        def safe_char(c):
+            if c.isalnum():
+                return c
+            else:
+                return "_"
+
+        return "".join(safe_char(c) for c in s).rstrip("_")
+
     # Generate a name for the output file if the user hasn't given one
     def generate_outfile_name(self):
-        # Function to make a string safe for a filename
-        def make_safe_filename(s):
-            def safe_char(c):
-                if c.isalnum():
-                    return c
-                else:
-                    return "_"
-
-            return "".join(safe_char(c) for c in s).rstrip("_")
-
         title = self.post_metadata['data']['children'][0]['data']['title']
-        self.outfile = make_safe_filename(title)
+        self.outfile = self.make_safe_filename(title)
 
     # Download media to a temp directory and show the progress
     def download_media(self, url, filename, text):
@@ -191,13 +206,13 @@ class RedditDownloader:
     # Combine the audio with the video
     def combine_audio_video(self):
         command = self.FFMPEG_COMMAND.format(
+            executable = self.EXECUTABLE,
             video_url = self.video_tempfile,
             audio_url = self.audio_tempfile,
             outfile = self.outfile,
             comment = self.OUTPUT_COMMENT
         )
         subprocess.call(command, shell=True)
-        print("Done")
 
     # Remove the temporary files
     def remove_temp_files(self):
@@ -230,7 +245,9 @@ class RedditDownloader:
         self.download_media(self.video_url, self.video_tempfile, "video")
         self.download_media(self.audio_url, self.audio_tempfile, "audio")
 
+        print("Combining audio and video...")
         self.combine_audio_video()
+        print("Done")
 
         self.remove_temp_files()
 
@@ -239,3 +256,4 @@ reddit_post = input("Reddit post URL: ")
 filename = input("Output file: ")
 downloader = RedditDownloader(reddit_post, filename)
 downloader.start()
+input("Press enter to exit")
