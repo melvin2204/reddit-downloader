@@ -1,7 +1,4 @@
-"""
-From https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
-"""
-import sys
+# From https://gist.github.com/aubricus/f91fb55dc6ba5557fbab06119420dd6a
 
 def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_length=90):
     """
@@ -22,6 +19,4 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
     print("'\r{a} |{b}| {c}{d} {e}".format(a=prefix,b=bar,c=percents,d="%",e=suffix), end="\r", flush=True)
 
     if iteration == total:
-        #sys.stdout.write("\n")
         print("")
-    #sys.stdout.flush()
