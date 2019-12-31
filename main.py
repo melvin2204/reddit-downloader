@@ -33,6 +33,7 @@ class RedditDownloader:
     METADATA_URL = "https://api.reddit.com/api/info/?id=t3_"
     TIMEOUT = 10
 
+    # Settings for ffmpeg and downloading
     OUTPUT_COMMENT = "Downloaded with Reddit Downloader V2"
     EXECUTABLE = resource_path("ffmpeg")
     FFMPEG_COMMAND = "{executable} -i {video_url} -i {audio_url} -c:v copy -c:a aac -strict experimental -metadata comment=\"{comment}\" -y -hide_banner -loglevel panic {outfile}.mp4"
@@ -56,6 +57,7 @@ class RedditDownloader:
         self.video_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
         self.audio_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
 
+        # Check if user actually entered something
         if self.outfile.rstrip() == "":
             self.outfile = None
 
@@ -69,6 +71,7 @@ class RedditDownloader:
         if result is None:
             return False
 
+        # Grab result
         result = result.group(0)
 
         # Remove comments / and trailing /
@@ -102,6 +105,7 @@ class RedditDownloader:
     # Check if the media is from v.redd.it
     def check_if_vreddit(self):
         is_crosspost = self.json_key_exists(self.post_metadata['data']['children'][0]['data'], 'crosspost_parent_list')
+
         if is_crosspost:
             is_vreddit = self.post_metadata['data']['children'][0]['data']['crosspost_parent_list'][0]['domain'] == "v.redd.it"
             is_video = self.post_metadata['data']['children'][0]['data']['crosspost_parent_list'][0]['is_video']
@@ -109,11 +113,12 @@ class RedditDownloader:
             is_vreddit = self.post_metadata['data']['children'][0]['data']['domain'] == "v.redd.it"
             is_video = self.post_metadata['data']['children'][0]['data']['is_video']
 
-        if (not is_vreddit) and is_video:
+        if not (is_vreddit and is_video):
             self.error = True
 
-        return is_vreddit and is_video
+        return (is_vreddit and is_video)
 
+    # Check if a JSON key exists
     def json_key_exists(self, json, key):
         try:
             buffer = json[key]
@@ -122,6 +127,7 @@ class RedditDownloader:
 
         return True
 
+    # Check if an XML tag exists
     def xml_tag_exists(self, xml, index):
         try:
             buffer = xml[index]
@@ -142,6 +148,7 @@ class RedditDownloader:
     # Function to extract the XML from the DASH playlist
     def get_dash_playlist(self):
         url = self.dash_url
+
         reddit_response = self.do_get_request(url)
 
         if reddit_response.status_code != 200:
@@ -149,23 +156,29 @@ class RedditDownloader:
             print("An error occurred while retrieving the DASH playlist: not 200 OK")
             return False
 
+        # Parse response as XML
         self.dash_playlist = ET.fromstring(reddit_response.text)
 
     # Extract the video and audio url from the playlist
     def parse_dash_playlist(self):
         self.has_audio = self.xml_tag_exists(self.dash_playlist[0], 1)
 
+        # If the video has audio, select the audio data from the playlist
         if self.has_audio:
             audio_data = self.dash_playlist[0][1][0]
 
+        # Select video data from the playlist
         video_data = self.dash_playlist[0][0]
 
+        # Grab the base URL from the playlist to download the video and audio
         base_url = self.dash_url.replace("DASHPlaylist.mpd", "")
 
+        # If the video has audio, select the URL and metadata
         if self.has_audio:
             self.audio_url = base_url + audio_data[1].text
             self.audio_sampling_rate = audio_data.attrib['audioSamplingRate']
 
+        # Select all possible video resolutions and other metadata
         video_resolutions = []
         for resolution in video_data:
             video_attributes = resolution.attrib
@@ -177,6 +190,7 @@ class RedditDownloader:
                 "mimeType": video_attributes['mimeType']
             })
 
+        # Select the video with the most pixels
         highest_resolution = self.get_highest_resolution(video_resolutions)
         self.video_url = highest_resolution['url']
         self.video_framerate = highest_resolution['frameRate']
@@ -205,28 +219,32 @@ class RedditDownloader:
             else:
                 return "_"
 
-        return "".join(safe_char(c) for c in s).rstrip("_")
+        return ("".join(safe_char(c) for c in s).rstrip("_"))[0:100]
 
-    # Generate a name for the output file if the user hasn't given one
+    # Generate a name for the output file if the user hasn't given one. This name will be the post's title
     def generate_outfile_name(self):
         title = self.post_metadata['data']['children'][0]['data']['title']
         self.outfile = self.make_safe_filename(title)
 
     # Download media to a temp directory and show the progress
     def download_media(self, url, filename, text):
-        print("test")
         local_filename = filename
         downloaded_bytes = 0
         with requests.get(url, stream=True) as r:
             r.raise_for_status()
+            # Get the filesize for the progress calculation
             total_bytes = len(r.content)
+
             with open(local_filename, "wb") as f:
                 for chunk in r.iter_content(chunk_size=4096):
+                    # Filter keep-alive data
                     if chunk:
+                        f.write(chunk)
+                        # Calculate progress
                         downloaded_bytes += len(chunk)
                         progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
-                        f.write(chunk)
 
+    # Check if the file has already been downloaded
     def check_if_alread_downloaded(self):
         out_path = "{out_folder}/{out_file}".format(out_folder=self.OUTPUT_DIR, out_file=self.outfile)
         if not os.path.exists(self.OUTPUT_DIR):
@@ -275,43 +293,54 @@ class RedditDownloader:
                 pass
 
     def start(self):
+        # Extract the post ID from the URL
         if self.extract_id(self.url):
             print("Found post ID: {}".format(self.post_id))
         else:
             print("No post ID found. (is it a Reddit comments link?)")
             return False
 
+        # Download the post metadata from the Reddit API
         self.get_metadata()
 
+        # Check if the media is supported
         if not self.check_if_vreddit():
             print("Not v.redd.it!")
             return False
 
+        # Check if the user has left the output file name empty, if so, set the post title as name
         if self.outfile is None:
             self.generate_outfile_name()
 
+        # Check if the post has already been downloaded, if so, ask to continue
         if not self.check_if_alread_downloaded():
             print("Aborted by user.")
             return False
+        else:
+            print("Downloading \"{}\"".format(self.post_metadata['data']['children'][0]['data']['title']))
 
-        print("Downloading \"{}\"".format(self.post_metadata['data']['children'][0]['data']['title']))
-
+        # Get the URL from the DASH playlist, download it and parse it to XML
         self.get_dash_url()
         self.get_dash_playlist()
         self.parse_dash_playlist()
 
+        # Download the video tracks
         self.download_media(self.video_url, self.video_tempfile, "video")
+
+        # If the post has audio, download it too
         if self.has_audio:
             self.download_media(self.audio_url, self.audio_tempfile, "audio")
             print("Combining audio and video...")
         else:
             print("Converting video...")
 
+        # Combine the audio and video tracks
         self.combine_audio_video()
 
+        # Remove the generated temporary files
         self.remove_temp_files()
 
-        print("Done")
+        print("Done. You can find your video in the \"{}\" folder".format(self.OUTPUT_DIR))
         return True
 
 # Retrieve link
