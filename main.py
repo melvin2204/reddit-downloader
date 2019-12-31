@@ -26,20 +26,6 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
-def download_media(url, filename, text):
-    local_filename = filename
-    downloaded_bytes = 0
-    with requests.get(url, stream=True) as r:
-        r.raise_for_status()
-        total_bytes = len(r.content)
-        with open(local_filename, "wb") as f:
-            for chunk in r.iter_content(chunk_size=4096):
-                if chunk:
-                    downloaded_bytes += len(chunk)
-                    progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
-                    f.write(chunk)
-
-
 class RedditDownloader:
     # Headers for the communication with the Reddit servers
     USER_AGENT = "Reddit Video Downloader"
@@ -228,6 +214,7 @@ class RedditDownloader:
 
     # Download media to a temp directory and show the progress
     def download_media(self, url, filename, text):
+        print("test")
         local_filename = filename
         downloaded_bytes = 0
         with requests.get(url, stream=True) as r:
@@ -240,9 +227,8 @@ class RedditDownloader:
                         progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
                         f.write(chunk)
 
-    # Combine the audio with the video
-    def combine_audio_video(self):
-        out_path = "{out_folder}/{out_file}".format(out_folder=self.OUTPUT_DIR,out_file=self.outfile)
+    def check_if_alread_downloaded(self):
+        out_path = "{out_folder}/{out_file}".format(out_folder=self.OUTPUT_DIR, out_file=self.outfile)
         if not os.path.exists(self.OUTPUT_DIR):
             os.mkdir(self.OUTPUT_DIR)
 
@@ -251,6 +237,12 @@ class RedditDownloader:
             choice = input("{} already exists, overwrite? (y/N): ".format(out_path + ".mp4"))
             if choice != "y":
                 return False
+
+        return True
+
+    # Combine the audio with the video
+    def combine_audio_video(self):
+        out_path = "{out_folder}/{out_file}".format(out_folder=self.OUTPUT_DIR,out_file=self.outfile)
 
         if self.has_audio:
             command = self.FFMPEG_COMMAND.format(
@@ -269,7 +261,6 @@ class RedditDownloader:
             )
 
         subprocess.call(command, shell=True)
-        return True
 
     # Remove the temporary files
     def remove_temp_files(self):
@@ -291,31 +282,37 @@ class RedditDownloader:
             return False
 
         self.get_metadata()
+
         if not self.check_if_vreddit():
             print("Not v.redd.it!")
             return False
-        else:
-            print("Downloading \"{}\"".format(self.post_metadata['data']['children'][0]['data']['title']))
+
         if self.outfile is None:
             self.generate_outfile_name()
+
+        if not self.check_if_alread_downloaded():
+            print("Aborted by user.")
+            return False
+
+        print("Downloading \"{}\"".format(self.post_metadata['data']['children'][0]['data']['title']))
 
         self.get_dash_url()
         self.get_dash_playlist()
         self.parse_dash_playlist()
 
-        download_media(self.video_url, self.video_tempfile, "video")
+        self.download_media(self.video_url, self.video_tempfile, "video")
         if self.has_audio:
-            download_media(self.audio_url, self.audio_tempfile, "audio")
+            self.download_media(self.audio_url, self.audio_tempfile, "audio")
             print("Combining audio and video...")
         else:
             print("Converting video...")
 
-        if not self.combine_audio_video():
-            print("Aborted by user.")
-        else:
-            print("Done")
+        self.combine_audio_video()
 
         self.remove_temp_files()
+
+        print("Done")
+        return True
 
 # Retrieve link
 reddit_post = input("Reddit post URL: ")
