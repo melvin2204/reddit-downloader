@@ -21,7 +21,8 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        #base_path = os.path.abspath(".")
+        return relative_path
 
     return os.path.join(base_path, relative_path)
 
@@ -230,19 +231,17 @@ class RedditDownloader:
     def download_media(self, url, filename, text):
         local_filename = filename
         downloaded_bytes = 0
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            # Get the filesize for the progress calculation
-            total_bytes = len(r.content)
+        with open(local_filename, "wb") as f:
+            r = requests.get(url, stream=True)
+            total_bytes = int(r.headers.get('content-length'))
+            for chunk in r.iter_content(chunk_size=4096):
+                # Filter keep-alive data
+                if chunk:
+                    f.write(chunk)
+                    # Calculate progress
+                    downloaded_bytes += len(chunk)
+                    progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
 
-            with open(local_filename, "wb") as f:
-                for chunk in r.iter_content(chunk_size=4096):
-                    # Filter keep-alive data
-                    if chunk:
-                        f.write(chunk)
-                        # Calculate progress
-                        downloaded_bytes += len(chunk)
-                        progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
 
     # Check if the file has already been downloaded
     def check_if_alread_downloaded(self):
