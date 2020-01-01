@@ -16,7 +16,7 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
     filled_length = int(round(bar_length * iteration / float(total)))
     bar = '█' * filled_length + '-' * (bar_length - filled_length)
 
-    print("'\r{a} |{b}| {c}{d} {e}".format(a=prefix,b=bar,c=percents,d="%",e=suffix), end="\r", flush=True)
+    print("'\r{a} |{b}| {c}{d} {e}".format(a=prefix,b=bar,c=percents,d="%",e=suffix), end="", flush=True)
 
     if iteration == total:
         print("")
