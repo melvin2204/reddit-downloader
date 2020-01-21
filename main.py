@@ -1,9 +1,3 @@
-print("""Reddit Video Downloader v2 by Melvin2204
-Currently only the v.redd.it domain is supported.
-Please only enter Reddit comment links
-""")
-
-print("Loading dependencies...")
 import re
 import requests
 import json
@@ -13,6 +7,45 @@ import os
 import sys
 import progress
 import subprocess
+import argparse
+
+
+# Set command line arguments
+parser = argparse.ArgumentParser(description='Download v.redd.it media via the command line.')
+
+parser.add_argument(
+    "-p",
+    "--post",
+    help="URL of the post to download",
+    action="store"
+)
+parser.add_argument(
+    "-o",
+    "--outfile",
+    help="name of the output file (leave empty for post title)",
+    action="store"
+)
+parser.add_argument(
+    "-s",
+    "--silent",
+    help="don't print any output to the terminal. (Won't overwrite file if it exists)",
+    action="store_true"
+)
+parser.add_argument(
+    "-O",
+    "--overwrite",
+    help="overwrite output file if it already exists",
+    action="store_true"
+)
+
+args = parser.parse_args()
+
+# Set verbosity
+if args.silent:
+    verbosity = False
+else:
+    verbosity = True
+
 
 # Make a correct path for files in the PyInstaller executable
 def resource_path(relative_path):
@@ -26,7 +59,17 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
+# Overload the print function to enable/disable verbosity
+old_print = print
+def print(*args, **kwargs):
+    global verbosity
+    if verbosity:
+        old_print(*args, **kwargs)
+    else:
+        return None
 
+
+# Reddit downloader class
 class RedditDownloader:
     # Headers for the communication with the Reddit servers
     USER_AGENT = "Reddit Video Downloader"
@@ -42,6 +85,10 @@ class RedditDownloader:
     OUTPUT_DIR = "downloaded"
 
     def __init__(self, url, outfile=None):
+        print("""Reddit Video Downloader v2 by Melvin2204
+        Currently only the v.redd.it domain is supported.
+        Please only enter Reddit comment links
+        """)
         self.url = url
         self.outfile = self.make_safe_filename(outfile)
         self.post_id = None
@@ -245,7 +292,9 @@ class RedditDownloader:
                     f.write(chunk)
                     # Calculate progress
                     downloaded_bytes += len(chunk)
-                    progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
+                    # Only print progress if verbosity is on
+                    if verbosity:
+                        progress.print_progress(downloaded_bytes, total_bytes, prefix="Downloading {}".format(text))
 
 
     # Check if the file has already been downloaded
@@ -256,6 +305,15 @@ class RedditDownloader:
 
         # Check if file already exists
         if os.path.exists(out_path + ".mp4"):
+
+            # Overwrite if overwrite flag is set
+            if args.overwrite:
+                return True
+
+            # Don't overwrite if silent flag is set
+            if args.silent:
+                return False
+
             choice = input("{} already exists, overwrite? (y/N): ".format(out_path + ".mp4"))
             if choice != "y":
                 return False
@@ -347,9 +405,22 @@ class RedditDownloader:
         print("Done. You can find your video in the \"{}\" folder".format(self.OUTPUT_DIR))
         return True
 
-# Retrieve link
-reddit_post = input("Reddit post URL: ")
-filename = input("Output file (leave empty for post title): ")
+if args.post is not None:
+    # Set paramaters based on command line arguments
+    reddit_post = args.post
+
+    if args.outfile is not None:
+        filename = args.outfile
+    else:
+        filename = ""
+else:
+    # Set parameters based on terminal input
+    reddit_post = input("Reddit post URL: ")
+    filename = input("Output file (leave empty for post title): ")
+
 downloader = RedditDownloader(reddit_post, filename)
 downloader.start()
-input("Press enter to exit")
+
+# Check if running from PyInstaller package
+if getattr( sys, 'frozen', False ) and verbosity:
+    input("Press enter to exit...")
