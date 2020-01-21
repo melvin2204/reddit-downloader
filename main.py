@@ -402,9 +402,8 @@ class RedditDownloader:
         return True
 
 print("""Reddit Video Downloader v2 by Melvin2204
-        Currently only the v.redd.it domain is supported.
-        Please only enter Reddit comment links
-        """)
+Currently only the v.redd.it domain is supported.
+Please only enter Reddit comment links""")
 
 if args.post is not None:
     # Set paramaters based on command line arguments
