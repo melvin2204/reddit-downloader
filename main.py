@@ -82,12 +82,17 @@ class RedditDownloader:
         return True
 
     # Function to do a get request and return the data
-    def do_get_request(self, url):
+    def do_get_request(self, url, stream=False):
         headers = {
             "User-Agent": self.USER_AGENT,
             "Referer": self.REFERER
         }
-        response = requests.get(url,headers=headers,timeout=self.TIMEOUT)
+        response = requests.get(
+            url,
+            headers=headers,
+            timeout=self.TIMEOUT,
+            stream=stream
+        )
         return response
 
     # Requests the metadata for the post id from the Reddit servers.
@@ -232,7 +237,7 @@ class RedditDownloader:
         local_filename = filename
         downloaded_bytes = 0
         with open(local_filename, "wb") as f:
-            r = requests.get(url, stream=True)
+            r = self.do_get_request(url, stream=True)
             total_bytes = int(r.headers.get('content-length'))
             for chunk in r.iter_content(chunk_size=4096):
                 # Filter keep-alive data
