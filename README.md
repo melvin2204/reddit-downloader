@@ -14,6 +14,7 @@ I've also listed the possible arguments here:
 # Example usage:
 ### Interactive mode
 Command: `> ./reddit-downloader.exe`
+
 Output: 
 ```
 Reddit Video Downloader v2 by Melvin2204
@@ -34,6 +35,7 @@ Done. You can find your video in the "downloaded" folder
 
 ### Command line mode
 Command: `./reddit-downloader.exe -p "https://www.reddit.com/r/subreddit/comments/123456/post_title/"`
+
 Output:
 ```
 Reddit Video Downloader v2 by Melvin2204
@@ -50,6 +52,7 @@ Done. You can find your video in the "downloaded" folder
 
 
 Command: `./reddit-downloader.exe -p "https://www.reddit.com/r/subreddit/comments/123456/post_title/" -o "cool title"`
+
 Output:
 ```
 Reddit Video Downloader v2 by Melvin2204
@@ -67,6 +70,7 @@ Done. You can find your video in the "downloaded" folder
 
 
 Command: `./reddit-downloader.exe -p "https://www.reddit.com/r/subreddit/comments/123456/post_title/" -o "cool title" -O`
+
 Output:
 ```
 Reddit Video Downloader v2 by Melvin2204
@@ -83,4 +87,5 @@ Done. You can find your video in the "downloaded" folder
 
 
 Command: `./reddit-downloader.exe -p "https://www.reddit.com/r/subreddit/comments/123456/post_title/" -o "cool title" -s`
+
 Output: no output because of -s flag.
