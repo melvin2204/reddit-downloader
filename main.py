@@ -85,10 +85,6 @@ class RedditDownloader:
     OUTPUT_DIR = "downloaded"
 
     def __init__(self, url, outfile=None):
-        print("""Reddit Video Downloader v2 by Melvin2204
-        Currently only the v.redd.it domain is supported.
-        Please only enter Reddit comment links
-        """)
         self.url = url
         self.outfile = self.make_safe_filename(outfile)
         self.post_id = None
@@ -404,6 +400,11 @@ class RedditDownloader:
 
         print("Done. You can find your video in the \"{}\" folder".format(self.OUTPUT_DIR))
         return True
+
+print("""Reddit Video Downloader v2 by Melvin2204
+        Currently only the v.redd.it domain is supported.
+        Please only enter Reddit comment links
+        """)
 
 if args.post is not None:
     # Set paramaters based on command line arguments
