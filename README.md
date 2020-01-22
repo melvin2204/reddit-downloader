@@ -13,7 +13,7 @@ I've also listed the possible arguments here:
 
 # Example usage:
 ### Interactive mode
-Command: `> ./reddit-downloader.exe`
+Command: `./reddit-downloader.exe`
 
 Output: 
 ```
