@@ -26,7 +26,17 @@ parser.add_argument(
     help="overwrite output file if it already exists",
     action="store_true"
 )
-
+parser.add_argument(
+    "--ffmpeg-add-arguments",
+    help="add custom arguments to the FFmpeg command used to generate the video",
+    action="store"
+)
+parser.add_argument(
+    "-l",
+    "--ffmpeg-loglevel",
+    help="set the loglevel for FFmpeg (defaults to fatal). See FFmpeg documentation for possible values.",
+    action="store"
+)
 
 def parse_args():
     args = parser.parse_args()
