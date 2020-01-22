@@ -51,8 +51,8 @@ class RedditDownloader:
     # Settings for ffmpeg and downloading
     OUTPUT_COMMENT = "Downloaded with Reddit Downloader V2"
     EXECUTABLE = resource_path("ffmpeg")
-    FFMPEG_COMMAND = "{executable} -i {video_url} -c:v copy -strict experimental -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
-    FFMPEG_COMMAND_NO_AUDIO = "{executable} -i {video_url} -i {audio_url} -c:a aac -c:v copy -strict experimental a -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
+    FFMPEG_COMMAND = "{executable} -i {video_url} -i {audio_url} -c:a aac -c:v copy -strict experimental -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
+    FFMPEG_COMMAND_NO_AUDIO = "{executable} -i {video_url} -c:v copy -strict experimental -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
     OUTPUT_DIR = "downloaded"
 
     def __init__(self, url, outfile=None, extra_arguments="", ffmpeg_loglevel="fatal"):
