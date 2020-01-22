@@ -6,10 +6,12 @@ Simply run the executable and follow the steps. You can also run it from the com
 
 To view all the possible arguments, run the program with the -h or --help flag. 
 I've also listed the possible arguments here:
-* -p [post]     Post URL: this is the URL of the post to download.
-* -o [outfile]  Outfile: the filename of the output without file extension.
-* -s            Silent: don't print any output. Won't automatically overwrite duplicate files. (Use in combination with `-O` to overwrite duplicates).
-* -O            Overwrite: always overwrite duplicate files. (Can be used in combination with `-s`) 
+* -p [post]               Post URL: this is the URL of the post to download.
+* -o [outfile]            Outfile: the filename of the output without file extension.
+* -s                      Silent: don't print any output. Won't automatically overwrite duplicate files. (Use in combination with `-O` to overwrite duplicates).
+* -O                      Overwrite: always overwrite duplicate files. (Can be used in combination with `-s`) 
+* --ffmpeg-add-arguments  add custom arguments to the FFmpeg command used to generate the video
+* -l                      set the loglevel for FFmpeg (defaults to fatal). See FFmpeg documentation for possible values.
 
 # Example usage:
 ### Interactive mode
