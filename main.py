@@ -309,7 +309,6 @@ class RedditDownloader:
             arguments=self.extra_arguments,
             ffmpeg_loglevel=self.ffmpeg_loglevel
         )
-        print(command)
         subprocess.call(command, shell=True)
 
     # Remove the temporary files
