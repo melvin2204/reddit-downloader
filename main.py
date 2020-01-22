@@ -7,38 +7,11 @@ import os
 import sys
 import progress
 import subprocess
-import argparse
+import arguments
 
 
-# Set command line arguments
-parser = argparse.ArgumentParser(description='Download v.redd.it media via the command line.')
-
-parser.add_argument(
-    "-p",
-    "--post",
-    help="URL of the post to download",
-    action="store"
-)
-parser.add_argument(
-    "-o",
-    "--outfile",
-    help="name of the output file (leave empty for post title)",
-    action="store"
-)
-parser.add_argument(
-    "-s",
-    "--silent",
-    help="don't print any output to the terminal. (Won't overwrite file if it exists)",
-    action="store_true"
-)
-parser.add_argument(
-    "-O",
-    "--overwrite",
-    help="overwrite output file if it already exists",
-    action="store_true"
-)
-
-args = parser.parse_args()
+# Get command line arguments
+args = arguments.parse_args()
 
 # Set verbosity
 if args.silent:
@@ -49,7 +22,6 @@ else:
 
 # Make a correct path for files in the PyInstaller executable
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
@@ -422,5 +394,5 @@ downloader = RedditDownloader(reddit_post, filename)
 downloader.start()
 
 # Check if running from PyInstaller package
-if getattr( sys, 'frozen', False ) and verbosity:
+if getattr(sys, 'frozen', False) and verbosity:
     input("Press enter to exit...")
