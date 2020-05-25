@@ -167,6 +167,9 @@ class RedditDownloader:
         else:
             self.dash_url = self.post_metadata['data']['children'][0]['data']['secure_media']['reddit_video']['dash_url']
 
+        # Reddit now puts a query string behind the dash url, which breaks this program.
+        self.dash_url = self.dash_url.split("?")[0]
+
     # Function to extract the XML from the DASH playlist
     def get_dash_playlist(self):
         url = self.dash_url
