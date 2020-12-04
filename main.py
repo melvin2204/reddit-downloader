@@ -186,14 +186,14 @@ class RedditDownloader:
 
     # Extract the video and audio url from the playlist
     def parse_dash_playlist(self):
-        self.has_audio = self.xml_tag_exists(self.dash_playlist[0], 1)
+        self.has_audio = self.xml_tag_exists(self.dash_playlist[0], 0)
 
         # If the video has audio, select the audio data from the playlist
         if self.has_audio:
-            audio_data = self.dash_playlist[0][1][0]
+            audio_data = self.dash_playlist[0][0][0]
 
         # Select video data from the playlist
-        video_data = self.dash_playlist[0][0]
+        video_data = self.dash_playlist[0][1]
 
         # Grab the base URL from the playlist to download the video and audio
         base_url = self.dash_url.replace("DASHPlaylist.mpd", "")
@@ -212,7 +212,6 @@ class RedditDownloader:
                 "height": int(video_attributes['height']),
                 "frameRate": int(video_attributes['frameRate']),
                 "url": base_url + resolution[0].text,
-                "mimeType": video_attributes['mimeType']
             })
 
         # Select the video with the most pixels
