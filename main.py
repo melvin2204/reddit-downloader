@@ -376,40 +376,41 @@ class RedditDownloader:
         print("Done. You can find your video in the \"{}\" folder".format(self.OUTPUT_DIR))
         return True
 
-print("""
-Reddit Video Downloader v2 by Melvin2204
-Currently only the v.redd.it domain is supported.
-Please only enter Reddit comment links
-""")
+if __name__ == '__main__':
+    print("""
+    Reddit Video Downloader v2 by Melvin2204
+    Currently only the v.redd.it domain is supported.
+    Please only enter Reddit comment links
+    """)
 
-if args.post is not None:
-    # Set paramaters based on command line arguments
-    reddit_post = args.post
+    if args.post is not None:
+        # Set paramaters based on command line arguments
+        reddit_post = args.post
 
-    if args.outfile is not None:
-        filename = args.outfile
+        if args.outfile is not None:
+            filename = args.outfile
+        else:
+            filename = ""
+
+        if args.ffmpeg_loglevel is not None:
+            ffmpeg_loglevel = args.ffmpeg_loglevel
+        else:
+            ffmpeg_loglevel = "fatal"
+
+        if args.ffmpeg_add_arguments is not None:
+            extra_arguments = args.ffmpeg_add_arguments
+        else:
+            extra_arguments = ""
+
+        downloader = RedditDownloader(url=reddit_post, outfile=filename, extra_arguments=extra_arguments, ffmpeg_loglevel=ffmpeg_loglevel)
     else:
-        filename = ""
+        # Set parameters based on terminal input
+        reddit_post = input("Reddit post URL: ")
+        filename = input("Output file (leave empty for post title): ")
+        downloader = RedditDownloader(url=reddit_post, outfile=filename)
 
-    if args.ffmpeg_loglevel is not None:
-        ffmpeg_loglevel = args.ffmpeg_loglevel
-    else:
-        ffmpeg_loglevel = "fatal"
+    downloader.start()
 
-    if args.ffmpeg_add_arguments is not None:
-        extra_arguments = args.ffmpeg_add_arguments
-    else:
-        extra_arguments = ""
-
-    downloader = RedditDownloader(url=reddit_post, outfile=filename, extra_arguments=extra_arguments, ffmpeg_loglevel=ffmpeg_loglevel)
-else:
-    # Set parameters based on terminal input
-    reddit_post = input("Reddit post URL: ")
-    filename = input("Output file (leave empty for post title): ")
-    downloader = RedditDownloader(url=reddit_post, outfile=filename)
-
-downloader.start()
-
-# Check if running from PyInstaller package or if user is in interactive mode
-if getattr(sys, 'frozen', False) or args.post is None:
-    input("Press enter to exit...")
+    # Check if running from PyInstaller package or if user is in interactive mode
+    if getattr(sys, 'frozen', False) or args.post is None:
+        input("Press enter to exit...")
