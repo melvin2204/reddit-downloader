@@ -7,38 +7,11 @@ import os
 import sys
 import progress
 import subprocess
-import argparse
+import arguments
 
 
-# Set command line arguments
-parser = argparse.ArgumentParser(description='Download v.redd.it media via the command line.')
-
-parser.add_argument(
-    "-p",
-    "--post",
-    help="URL of the post to download",
-    action="store"
-)
-parser.add_argument(
-    "-o",
-    "--outfile",
-    help="name of the output file (leave empty for post title)",
-    action="store"
-)
-parser.add_argument(
-    "-s",
-    "--silent",
-    help="don't print any output to the terminal. (Won't overwrite file if it exists)",
-    action="store_true"
-)
-parser.add_argument(
-    "-O",
-    "--overwrite",
-    help="overwrite output file if it already exists",
-    action="store_true"
-)
-
-args = parser.parse_args()
+# Get command line arguments
+args = arguments.parse_args()
 
 # Set verbosity
 if args.silent:
@@ -49,12 +22,10 @@ else:
 
 # Make a correct path for files in the PyInstaller executable
 def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        #base_path = os.path.abspath(".")
         return relative_path
 
     return os.path.join(base_path, relative_path)
@@ -80,11 +51,11 @@ class RedditDownloader:
     # Settings for ffmpeg and downloading
     OUTPUT_COMMENT = "Downloaded with Reddit Downloader V2"
     EXECUTABLE = resource_path("ffmpeg")
-    FFMPEG_COMMAND = "{executable} -i {video_url} -i {audio_url} -c:v copy -c:a aac -strict experimental -metadata comment=\"{comment}\" -y -hide_banner -loglevel panic {outfile}.mp4"
-    FFMPEG_COMMAND_NO_AUDIO = "{executable} -i {video_url} -c:v copy -strict experimental -metadata comment=\"{comment}\" -y -hide_banner -loglevel panic {outfile}.mp4"
+    FFMPEG_COMMAND = "{executable} -i {video_url} -i {audio_url} -c:a aac -c:v copy -strict experimental -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
+    FFMPEG_COMMAND_NO_AUDIO = "{executable} -i {video_url} -c:v copy -strict experimental -y -hide_banner -loglevel {ffmpeg_loglevel} {arguments} {outfile}.mp4"
     OUTPUT_DIR = "downloaded"
 
-    def __init__(self, url, outfile=None):
+    def __init__(self, url, outfile=None, extra_arguments="", ffmpeg_loglevel="fatal"):
         self.url = url
         self.outfile = self.make_safe_filename(outfile)
         self.post_id = None
@@ -100,6 +71,8 @@ class RedditDownloader:
         self.video_resolution = (None, None)
         self.video_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
         self.audio_tempfile = os.path.join(tempfile.gettempdir(), os.urandom(24).hex())
+        self.extra_arguments = extra_arguments
+        self.ffmpeg_loglevel = ffmpeg_loglevel
 
         # Check if user actually entered something
         if self.outfile.rstrip() == "":
@@ -213,14 +186,14 @@ class RedditDownloader:
 
     # Extract the video and audio url from the playlist
     def parse_dash_playlist(self):
-        self.has_audio = self.xml_tag_exists(self.dash_playlist[0], 1)
+        self.has_audio = self.xml_tag_exists(self.dash_playlist[0], 0)
 
         # If the video has audio, select the audio data from the playlist
         if self.has_audio:
-            audio_data = self.dash_playlist[0][1][0]
+            audio_data = self.dash_playlist[0][0][0]
 
         # Select video data from the playlist
-        video_data = self.dash_playlist[0][0]
+        video_data = self.dash_playlist[0][1]
 
         # Grab the base URL from the playlist to download the video and audio
         base_url = self.dash_url.replace("DASHPlaylist.mpd", "")
@@ -239,7 +212,6 @@ class RedditDownloader:
                 "height": int(video_attributes['height']),
                 "frameRate": int(video_attributes['frameRate']),
                 "url": base_url + resolution[0].text,
-                "mimeType": video_attributes['mimeType']
             })
 
         # Select the video with the most pixels
@@ -324,21 +296,21 @@ class RedditDownloader:
         out_path = "{out_folder}/{out_file}".format(out_folder=self.OUTPUT_DIR,out_file=self.outfile)
 
         if self.has_audio:
-            command = self.FFMPEG_COMMAND.format(
-                executable = self.EXECUTABLE,
-                video_url = self.video_tempfile,
-                audio_url = self.audio_tempfile,
-                outfile = out_path,
-                comment = self.OUTPUT_COMMENT
-            )
+            audio_url = self.audio_tempfile
+            ffmpeg_command = self.FFMPEG_COMMAND
         else:
-            command = self.FFMPEG_COMMAND_NO_AUDIO.format(
-                executable=self.EXECUTABLE,
-                video_url=self.video_tempfile,
-                outfile=out_path,
-                comment=self.OUTPUT_COMMENT
-            )
+            audio_url = ""
+            ffmpeg_command = self.FFMPEG_COMMAND_NO_AUDIO
 
+        command = ffmpeg_command.format(
+            executable=self.EXECUTABLE,
+            video_url=self.video_tempfile,
+            audio_url=audio_url,
+            outfile=out_path,
+            comment=self.OUTPUT_COMMENT,
+            arguments=self.extra_arguments,
+            ffmpeg_loglevel=self.ffmpeg_loglevel
+        )
         subprocess.call(command, shell=True)
 
     # Remove the temporary files
@@ -404,26 +376,41 @@ class RedditDownloader:
         print("Done. You can find your video in the \"{}\" folder".format(self.OUTPUT_DIR))
         return True
 
-print("""Reddit Video Downloader v2 by Melvin2204
-Currently only the v.redd.it domain is supported.
-Please only enter Reddit comment links""")
+if __name__ == '__main__':
+    print("""
+    Reddit Video Downloader v2 by Melvin2204
+    Currently only the v.redd.it domain is supported.
+    Please only enter Reddit comment links
+    """)
 
-if args.post is not None:
-    # Set paramaters based on command line arguments
-    reddit_post = args.post
+    if args.post is not None:
+        # Set paramaters based on command line arguments
+        reddit_post = args.post
 
-    if args.outfile is not None:
-        filename = args.outfile
+        if args.outfile is not None:
+            filename = args.outfile
+        else:
+            filename = ""
+
+        if args.ffmpeg_loglevel is not None:
+            ffmpeg_loglevel = args.ffmpeg_loglevel
+        else:
+            ffmpeg_loglevel = "fatal"
+
+        if args.ffmpeg_add_arguments is not None:
+            extra_arguments = args.ffmpeg_add_arguments
+        else:
+            extra_arguments = ""
+
+        downloader = RedditDownloader(url=reddit_post, outfile=filename, extra_arguments=extra_arguments, ffmpeg_loglevel=ffmpeg_loglevel)
     else:
-        filename = ""
-else:
-    # Set parameters based on terminal input
-    reddit_post = input("Reddit post URL: ")
-    filename = input("Output file (leave empty for post title): ")
+        # Set parameters based on terminal input
+        reddit_post = input("Reddit post URL: ")
+        filename = input("Output file (leave empty for post title): ")
+        downloader = RedditDownloader(url=reddit_post, outfile=filename)
 
-downloader = RedditDownloader(reddit_post, filename)
-downloader.start()
+    downloader.start()
 
-# Check if running from PyInstaller package
-if getattr( sys, 'frozen', False ) and verbosity:
-    input("Press enter to exit...")
+    # Check if running from PyInstaller package or if user is in interactive mode
+    if getattr(sys, 'frozen', False) or args.post is None:
+        input("Press enter to exit...")
